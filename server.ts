@@ -152,7 +152,7 @@ function loadSavedPlaylist(): PlaylistItem[] {
   return [];
 }
 
-const PORT = 3000;
+const PORT = parseInt(process.env.REGIE_PORT || process.env.PORT || '3000', 10);
 
 // Playout State Engine (Optimized: zero background ticking loop, on-demand calculations)
 class PlayoutEngine {
