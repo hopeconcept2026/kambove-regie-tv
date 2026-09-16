@@ -19,6 +19,14 @@ import { MediaItem, PlaylistItem } from '../types';
 
 interface NasExplorerProps {
   mediaList: MediaItem[];
+  nasStatus?: {
+    mounted: boolean;
+    mountPoint: string;
+    totalSpaceGB: number;
+    freeSpaceGB: number;
+    usedSpaceGB: number;
+    latencyMs: number;
+  };
   onAddToPlaylist: (items: MediaItem[]) => void;
   onPlayDirectly: (item: MediaItem) => void;
   onRefreshNas: () => void;
@@ -27,6 +35,7 @@ interface NasExplorerProps {
 
 export const NasExplorer: React.FC<NasExplorerProps> = ({
   mediaList,
+  nasStatus,
   onAddToPlaylist,
   onPlayDirectly,
   onRefreshNas,
@@ -37,16 +46,41 @@ export const NasExplorer: React.FC<NasExplorerProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [inspectItem, setInspectItem] = useState<MediaItem | null>(null);
 
-  // Categories list
-  const categories = [
-    { id: 'all', label: 'Toutes les vidéos', icon: Folder, count: mediaList.length },
-    { id: 'meditations', label: 'Méditations', path: '/mnt/regie_videos/meditations', count: mediaList.filter(m => m.category === 'meditations').length },
-    { id: 'predications', label: 'Prédications & Cultes', path: '/mnt/regie_videos/predications', count: mediaList.filter(m => m.category === 'predications').length },
-    { id: 'louange', label: 'Louange & Musique', path: '/mnt/regie_videos/louange', count: mediaList.filter(m => m.category === 'louange').length },
-    { id: 'emissions', label: 'Émissions Spéciales', path: '/mnt/regie_videos/emissions', count: mediaList.filter(m => m.category === 'emissions').length },
-    { id: 'pubs', label: 'Jingles & Annonces', path: '/mnt/regie_videos/pubs', count: mediaList.filter(m => m.category === 'pubs').length },
-    { id: 'archives', label: 'Archives Kambove', path: '/mnt/regie_videos/archives', count: mediaList.filter(m => m.category === 'archives').length }
-  ];
+  // Categories list: dynamic based on real NAS subdirectories found, plus default standard folders
+  const categories = useMemo(() => {
+    const knownLabels: Record<string, string> = {
+      all: 'Toutes les vidéos',
+      meditations: 'Méditations',
+      predications: 'Prédications & Cultes',
+      louange: 'Louange & Musique',
+      emissions: 'Émissions Spéciales',
+      pubs: 'Jingles & Annonces',
+      archives: 'Archives Kambove',
+      videos: 'Dossier Principal (Vidéos)'
+    };
+
+    const catSet = new Set<string>();
+    mediaList.forEach((m) => {
+      if (m.category) catSet.add(m.category);
+    });
+
+    const list = [
+      { id: 'all', label: 'Toutes les vidéos', icon: Folder, count: mediaList.length }
+    ];
+
+    Array.from(catSet).forEach((catId) => {
+      const count = mediaList.filter((m) => m.category === catId).length;
+      const label = knownLabels[catId] || catId.charAt(0).toUpperCase() + catId.slice(1);
+      list.push({
+        id: catId,
+        label,
+        icon: Folder,
+        count
+      });
+    });
+
+    return list;
+  }, [mediaList]);
 
   // Filtered media
   const filteredMedia = useMemo(() => {
@@ -97,39 +131,56 @@ export const NasExplorer: React.FC<NasExplorerProps> = ({
           <div className="w-10 h-10 rounded-lg bg-indigo-950 border border-indigo-700/60 flex items-center justify-center text-indigo-400">
             <HardDrive className="w-5 h-5" />
           </div>
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
-              Explorateur NAS Vidéos
-              <span className="text-[10px] font-mono font-normal px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-700/60">
-                Point de montage : /mnt/regie_videos/
-              </span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Accès direct aux vidéos stockées sur le serveur NAS distant
-            </p>
-          </div>
-        </div>
-
-        {/* Storage Bar */}
-        <div className="flex items-center gap-4 bg-slate-900 px-3.5 py-2 rounded-lg border border-slate-800 text-xs">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-slate-400 uppercase font-mono">Stockage NAS</span>
-            <span className="font-mono font-bold text-slate-200">
-              1.85 To libres <span className="text-slate-500 font-normal">/ 4.00 To</span>
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+            Explorateur NAS Vidéos
+            <span className={`text-[10px] font-mono font-normal px-2 py-0.5 rounded border ${
+              nasStatus?.mounted
+                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-700/60'
+                : 'bg-amber-950/80 text-amber-400 border-amber-700/60'
+            }`}>
+              Point de montage : {nasStatus?.mountPoint || '/mnt/regie_videos'}
             </span>
-          </div>
-          <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-            <div className="h-full bg-indigo-500 rounded-full" style={{ width: '53.7%' }} />
-          </div>
-          <button
-            onClick={onRefreshNas}
-            disabled={isRefreshing}
-            className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Rafraîchir les fichiers du NAS"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
+          </h3>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {nasStatus?.mounted
+              ? 'Accès direct aux vidéos du volume NAS monté'
+              : 'En attente du montage du volume NAS sur le serveur'}
+          </p>
         </div>
+      </div>
+
+      {/* Storage Bar */}
+      <div className="flex items-center gap-4 bg-slate-900 px-3.5 py-2 rounded-lg border border-slate-800 text-xs">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-slate-400 uppercase font-mono">Stockage NAS</span>
+          <span className="font-mono font-bold text-slate-200">
+            {nasStatus && nasStatus.totalSpaceGB > 0
+              ? `${nasStatus.freeSpaceGB >= 1000 ? (nasStatus.freeSpaceGB / 1000).toFixed(2) + ' To' : nasStatus.freeSpaceGB + ' Go'} libres / ${(nasStatus.totalSpaceGB / 1000).toFixed(2)} To`
+              : 'Non monté'}
+          </span>
+        </div>
+        <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+          <div
+            className="h-full bg-indigo-500 rounded-full transition-all"
+            style={{
+              width: `${
+                nasStatus && nasStatus.totalSpaceGB > 0
+                  ? Math.min(100, Math.round((nasStatus.usedSpaceGB / nasStatus.totalSpaceGB) * 100))
+                  : 0
+              }%`
+            }}
+          />
+        </div>
+        <button
+          onClick={onRefreshNas}
+          disabled={isRefreshing}
+          className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          title="Rafraîchir les fichiers du NAS"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
       </div>
 
       {/* Main layout: Category Sidebar + Media Grid */}
@@ -219,9 +270,26 @@ export const NasExplorer: React.FC<NasExplorerProps> = ({
             {/* Media Items Table / List */}
             <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
               {filteredMedia.length === 0 ? (
-                <div className="py-16 text-center text-slate-500 text-xs">
-                  <Film className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  Aucune vidéo trouvée dans cette catégorie ou correspondant à votre recherche.
+                <div className="py-16 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-2">
+                  <Film className="w-10 h-10 text-slate-600 mb-1" />
+                  <span className="text-sm font-semibold text-slate-300">
+                    {mediaList.length === 0 ? 'Aucun fichier vidéo détecté sur le NAS' : 'Aucune vidéo trouvée'}
+                  </span>
+                  <p className="text-slate-400 max-w-md text-center leading-relaxed">
+                    {mediaList.length === 0
+                      ? 'Déposez vos fichiers vidéo (MP4, MKV, TS) dans le dossier /mnt/regie_videos/ ou ses sous-dossiers sur votre serveur, puis cliquez sur le bouton Rafraîchir.'
+                      : 'Aucun média ne correspond à la catégorie sélectionnée ou aux critères de votre filtre de recherche.'}
+                  </p>
+                  {mediaList.length === 0 && (
+                    <button
+                      onClick={onRefreshNas}
+                      disabled={isRefreshing}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-medium transition"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      <span>Scanner à nouveau le NAS</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredMedia.map((item) => {

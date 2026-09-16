@@ -11,82 +11,49 @@ import { NasExplorer } from './components/NasExplorer';
 import { SystemDiagnostics } from './components/SystemDiagnostics';
 import { DeploymentGuide } from './components/DeploymentGuide';
 import { MediaItem, PlaylistItem, PlayoutStatus } from './types';
-import { INITIAL_NAS_MEDIA, INITIAL_PLAYLIST } from './data/mockData';
 import { cascadeRundownTimes, formatDuration } from './utils/timeFormat';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'regie' | 'nas' | 'diagnostics' | 'guide'>('regie');
   const [status, setStatus] = useState<PlayoutStatus>({
-    status: 'ONLINE',
+    status: 'STANDBY',
     mode: 'playlist',
-    onAir: true,
-    currentMedia: {
-      title: 'Méditation Matinale - La Fidélité Divine',
-      path: '/mnt/regie_videos/meditations/meditation_matin_fidelite_2026.mp4',
-      category: 'meditations',
-      duration: 920,
-      elapsed: 142,
-      remaining: 778,
-      progress: 15.4,
-      durationFormatted: '15:20',
-      elapsedFormatted: '02:22',
-      remainingFormatted: '12:58'
-    },
-    nextMedia: {
-      title: 'Spot Jingle - Kambove TV Ident Station',
-      path: '/mnt/regie_videos/pubs/jingle_kambove_tv_ident_15s.mp4',
-      category: 'pubs',
-      startTime: '08:15:20',
-      durationFormatted: '00:15'
-    },
+    onAir: false,
+    currentMedia: null,
+    nextMedia: null,
     rtmpStatus: {
-      connected: true,
+      connected: false,
       url: 'rtmp://127.0.0.1:1935/live/kambove_live',
-      bitrateKbps: 2540,
-      fps: 25,
+      bitrateKbps: 0,
+      fps: 0,
       droppedFrames: 0,
-      uptimeSeconds: 30954
+      uptimeSeconds: 0
     },
     nasStatus: {
-      mounted: true,
+      mounted: false,
       mountPoint: '/mnt/regie_videos',
-      totalSpaceGB: 4000,
-      freeSpaceGB: 1850,
-      usedSpaceGB: 2150,
-      latencyMs: 1.4
+      totalSpaceGB: 0,
+      freeSpaceGB: 0,
+      usedSpaceGB: 0,
+      latencyMs: 0
     },
     serverStatus: {
       hostname: 'ubuntu-regie-kambove',
       os: 'Ubuntu 24.04 LTS (x86_64)',
-      liquidsoapPid: 14820,
-      liquidsoapRunning: true,
+      liquidsoapPid: null,
+      liquidsoapRunning: false,
       telnetPort: 1234,
-      telnetConnected: true,
-      cpuPercent: 18.5,
-      ramPercent: 34.2,
-      tempCelsius: 41.0
+      telnetConnected: false,
+      cpuPercent: 0,
+      ramPercent: 0,
+      tempCelsius: 0
     },
-    telnetLog: [
-      {
-        id: 'log-1',
-        time: '08:29:47',
-        command: 'server.version',
-        response: 'Liquidsoap 2.1.4 (Ubuntu 24.04 LTS)',
-        type: 'info'
-      },
-      {
-        id: 'log-2',
-        time: '08:30:47',
-        command: 'tv_playlist.reload',
-        response: 'OK (5 media items loaded from active_playlist.txt)',
-        type: 'success'
-      }
-    ]
+    telnetLog: []
   });
 
-  const [playlist, setPlaylist] = useState<PlaylistItem[]>(cascadeRundownTimes(INITIAL_PLAYLIST));
+  const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [nasMedia, setNasMedia] = useState<MediaItem[]>(INITIAL_NAS_MEDIA);
+  const [nasMedia, setNasMedia] = useState<MediaItem[]>([]);
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -121,14 +88,14 @@ export default function App() {
         }
         if (playlistRes.ok) {
           const pData = await playlistRes.json();
-          if (pData.playlist && pData.playlist.length > 0) {
+          if (Array.isArray(pData.playlist)) {
             setPlaylist(pData.playlist);
             setCurrentIndex(pData.currentIndex || 0);
           }
         }
         if (nasRes.ok) {
           const nData = await nasRes.json();
-          if (nData.items && nData.items.length > 0) {
+          if (Array.isArray(nData.items)) {
             setNasMedia(nData.items);
           }
         }
@@ -139,8 +106,38 @@ export default function App() {
 
     fetchInitial();
 
-    const interval = setInterval(fetchStatus, 2000);
-    return () => clearInterval(interval);
+    // Resource-friendly polling: 4s interval, paused automatically when browser tab is in background
+    let interval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(fetchStatus, 4000);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        fetchStatus();
+        startPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchStatus]);
 
   // Master controls
@@ -358,11 +355,6 @@ export default function App() {
         {/* Tab 4: Audit & Deployment Guide for Grace Ndala */}
         {activeTab === 'guide' && <DeploymentGuide />}
       </main>
-
-      {/* Footer bar */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-3 text-center text-xs text-slate-500 font-mono">
-        Kambove TV Régie Master &bull; Architecture Ubuntu Playout (Liquidsoap 2.1+) &bull; Développé pour Grace Ndala
-      </footer>
     </div>
   );
 }

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { PlaylistItem, RundownTemplate } from '../types';
 import { cascadeRundownTimes, formatDuration, timeStringToSeconds } from '../utils/timeFormat';
-import { SCHEDULE_TEMPLATES } from '../data/mockData';
+import { SCHEDULE_TEMPLATES } from '../data/templates';
 
 interface ScheduleGridProps {
   playlist: PlaylistItem[];

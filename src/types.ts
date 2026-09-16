@@ -3,7 +3,7 @@ export interface MediaItem {
   title: string;
   filename: string;
   path: string;
-  category: 'meditations' | 'predications' | 'louange' | 'emissions' | 'pubs' | 'archives' | 'direct';
+  category: string;
   duration: number; // in seconds
   durationFormatted: string;
   sizeFormatted: string;
