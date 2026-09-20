@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Play,
+import { Upload, Play,
   Trash2,
   MoveUp,
   MoveDown,
@@ -15,8 +14,7 @@ import {
   Sparkles,
   Lock,
   Unlock,
-  Radio
-} from 'lucide-react';
+  Radio } from 'lucide-react';
 import { PlaylistItem, RundownTemplate } from '../types';
 import { cascadeRundownTimes, formatDuration, timeStringToSeconds } from '../utils/timeFormat';
 import { SCHEDULE_TEMPLATES } from '../data/templates';
@@ -159,6 +157,55 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
         {/* Toolbar Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          <label
+            id="btn-import-playlist-file"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            title="Importer une playlist sauvegardée (.txt ou .json)"
+          >
+            <Upload className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Importer Playlist</span>
+            <input
+              type="file"
+              accept=".txt,.json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  try {
+                    const content = event.target?.result as string;
+                    if (file.name.endsWith('.json')) {
+                      const loaded = JSON.parse(content);
+                      if (Array.isArray(loaded)) onUpdatePlaylist(loaded);
+                    } else {
+                      // Fichier texte de chemins vidéo
+                      const lines = content.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+                      const items = lines.map((p, idx) => {
+                        const name = p.split('/').pop() || p;
+                        return {
+                          id: 'imported-' + idx + '-' + Date.now(),
+                          title: name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' '),
+                          path: p,
+                          category: 'Général',
+                          duration: 1800,
+                          durationFormatted: '30:00',
+                          scheduledTime: '08:00:00',
+                          calculatedStartTime: '08:00:00',
+                          calculatedEndTime: '08:30:00'
+                        };
+                      });
+                      onUpdatePlaylist(items);
+                    }
+                  } catch (err) {
+                    alert('Erreur lors de la lecture du fichier playlist');
+                  }
+                };
+                reader.readAsText(file);
+              }}
+            />
+          </label>
+
           <button
             id="btn-open-templates"
             onClick={() => setShowTemplatesModal(true)}

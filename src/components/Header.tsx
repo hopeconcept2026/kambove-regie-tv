@@ -259,18 +259,18 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Telemetry Vitals */}
           <div className="hidden md:flex items-center gap-4 text-[11px] text-slate-400 py-1 font-mono">
             <div className="flex items-center gap-1.5" title="Montage NAS /mnt/regie_videos">
-              <span className={`w-2 h-2 rounded-full ${status.nasStatus.mounted ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-              <span>{status.nasStatus.mounted ? `NAS: ${status.nasStatus.freeSpaceGB} Go libres` : 'NAS: Non monté (/mnt/regie_videos)'}</span>
+              <span className={`w-2 h-2 rounded-full ${status.nasStatus?.mounted ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+              <span>{status.nasStatus?.mounted ? `NAS: ${status.nasStatus?.freeSpaceGB || 0} Go libres` : 'NAS: Non monté (/mnt/regie_videos)'}</span>
             </div>
 
             <div className="flex items-center gap-1.5" title="Port Telnet Liquidsoap 1234">
-              <span className={`w-2 h-2 rounded-full ${status.serverStatus.telnetConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-              <span>Telnet 1234: {status.serverStatus.telnetConnected ? 'Actif' : 'En attente'}</span>
+              <span className={`w-2 h-2 rounded-full ${status.serverStatus?.telnetConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+              <span>Telnet 1234: {status.serverStatus?.telnetConnected ? 'Actif' : 'En attente'}</span>
             </div>
 
             <div className="flex items-center gap-1.5" title="Débit flux RTMP vers Owncast">
               <Radio className="w-3 h-3 text-indigo-400" />
-              <span>RTMP: {status.rtmpStatus.connected ? `${status.rtmpStatus.bitrateKbps} kbps` : 'Veille'}</span>
+              <span>RTMP: {status.rtmpStatus?.connected ? `${status.rtmpStatus?.bitrateKbps || 0} kbps` : 'Veille'}</span>
             </div>
           </div>
         </div>

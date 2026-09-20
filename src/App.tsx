@@ -151,8 +151,15 @@ export default function App() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.status) {
+        if (data.status && typeof data.status === 'object') {
           setStatus(data.status);
+        } else if (typeof data.status === 'string') {
+          setStatus(prev => ({
+            ...prev,
+            status: data.status,
+            onAir: data.onAir !== undefined ? data.onAir : (data.status === 'ONLINE'),
+            mode: data.mode || prev.mode
+          }));
         }
       }
     } catch (e) {
@@ -286,15 +293,13 @@ export default function App() {
   const handleRefreshNas = async () => {
     setIsRefreshingNas(true);
     try {
-      const res = await fetch('/api/nas');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.items) setNasMedia(data.items);
-      }
+      const res = await fetch('/api/nas/media');
+      const data = await res.json();
+      setNasMedia(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
     } finally {
-      setTimeout(() => setIsRefreshingNas(false), 500);
+      setIsRefreshingNas(false);
     }
   };
 
@@ -336,6 +341,7 @@ export default function App() {
         {/* Tab 2: NAS Video Library Explorer */}
         {activeTab === 'nas' && (
           <NasExplorer
+            nasStatus={status.nasStatus}
             mediaList={nasMedia}
             onAddToPlaylist={handleAddToPlaylist}
             onPlayDirectly={handlePlayDirectly}
