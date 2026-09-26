@@ -9,12 +9,11 @@ import { LiveMonitor } from './components/LiveMonitor';
 import { ScheduleGrid } from './components/ScheduleGrid';
 import { NasExplorer } from './components/NasExplorer';
 import { SystemDiagnostics } from './components/SystemDiagnostics';
-import { DeploymentGuide } from './components/DeploymentGuide';
 import { MediaItem, PlaylistItem, PlayoutStatus } from './types';
 import { cascadeRundownTimes, formatDuration } from './utils/timeFormat';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'regie' | 'nas' | 'diagnostics' | 'guide'>('regie');
+  const [activeTab, setActiveTab] = useState<'regie' | 'nas' | 'diagnostics'>('regie');
   const [status, setStatus] = useState<PlayoutStatus>({
     status: 'STANDBY',
     mode: 'playlist',
@@ -359,7 +358,6 @@ export default function App() {
         )}
 
         {/* Tab 4: Audit & Deployment Guide for Grace Ndala */}
-        {activeTab === 'guide' && <DeploymentGuide />}
       </main>
     </div>
   );

@@ -1,25 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
-  Radio,
   Tv,
+  Radio,
+  HardDrive,
+  CheckCircle2,
+  AlertTriangle,
   Play,
   Square,
-  SkipForward,
-  RotateCcw,
-  AlertOctagon,
-  HardDrive,
+  FastForward,
+  RotateCw,
   Cpu,
   Activity,
   Layers,
-  FileCode2,
   Clock
 } from 'lucide-react';
 import { PlayoutStatus } from '../types';
 
 interface HeaderProps {
   status: PlayoutStatus;
-  activeTab: 'regie' | 'nas' | 'diagnostics' | 'guide';
-  onTabChange: (tab: 'regie' | 'nas' | 'diagnostics' | 'guide') => void;
+  activeTab: 'regie' | 'nas' | 'diagnostics';
+  onTabChange: (tab: 'regie' | 'nas' | 'diagnostics') => void;
   onControl: (action: string) => void;
   isActionLoading: boolean;
 }
@@ -31,178 +31,165 @@ export const Header: React.FC<HeaderProps> = ({
   onControl,
   isActionLoading
 }) => {
-  const [currentTime, setCurrentTime] = useState<string>('--:--:--');
-  const [currentDate, setCurrentDate] = useState<string>('');
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('fr-FR'));
-      setCurrentDate(
-        now.toLocaleDateString('fr-FR', {
-          weekday: 'short',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        })
-      );
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getStatusBadge = () => {
+  const getBadgeStyle = () => {
     switch (status.status) {
       case 'ONLINE':
-        return (
-          <div id="badge-status-onair" className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-600/20 border border-rose-500/40 text-rose-300 text-xs font-bold tracking-wider animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-            ON AIR • DIFFUSION
-          </div>
-        );
-      case 'OBS_LIVE':
-        return (
-          <div id="badge-status-obs" className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold tracking-wider">
-            <Radio className="w-3.5 h-3.5 text-amber-400" />
-            DIRECT OBS STUDIO
-          </div>
-        );
+        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
       case 'STANDBY':
-        return (
-          <div id="badge-status-standby" className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-700/50 border border-slate-600 text-slate-300 text-xs font-bold tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-            STANDBY / VEILLE
-          </div>
-        );
+        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'OBS_LIVE':
+        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       default:
-        return (
-          <div id="badge-status-alert" className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-900/40 border border-red-700 text-red-300 text-xs font-bold tracking-wider">
-            HORS LIGNE
-          </div>
-        );
+        return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+    }
+  };
+
+  const getStatusLabel = () => {
+    switch (status.status) {
+      case 'ONLINE':
+        return 'ANTENNE ACTIVE (ON-AIR)';
+      case 'STANDBY':
+        return 'STANDBY / VEILLE';
+      case 'OBS_LIVE':
+        return 'DIRECT OBS (CULTE)';
+      default:
+        return 'HORS LIGNE';
     }
   };
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950 text-slate-100 select-none">
-      {/* Top Bar: Identity, Master Clock, Live Telemetry and Master Playout Controls */}
-      <div className="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-4">
-        {/* Left: Branding & Status */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center shadow-lg shadow-indigo-600/30 border border-indigo-400/30">
-            <Tv className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-black tracking-widest uppercase bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                Kambove TV
-              </h1>
-              <span className="text-[10px] font-semibold tracking-wider text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded bg-indigo-950/40">
-                RÉGIE MASTER
-              </span>
+    <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-xl">
+      {/* Top Banner: Brand, Channel Info & Master Automation Controls */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          
+          {/* Logo & Station Identity */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 ring-1 ring-white/20">
+                <Tv className="w-5 h-5 text-white" />
+              </div>
+              <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${
+                status.onAir ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'
+              }`} />
             </div>
-            <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-              Serveur Ubuntu Playout &bull; Stockage NAS
-            </p>
-          </div>
-          <div className="ml-2 pl-3 border-l border-slate-800 hidden sm:block">
-            {getStatusBadge()}
-          </div>
-        </div>
 
-        {/* Center: Studio Master Clock */}
-        <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 rounded-lg px-3.5 py-1.5 shadow-inner">
-          <Clock className="w-4 h-4 text-indigo-400" />
-          <div className="flex flex-col text-right">
-            <span className="text-xs text-slate-400 uppercase tracking-wider font-mono">{currentDate}</span>
-            <span className="text-lg font-mono font-bold tracking-widest text-emerald-400 leading-none">
-              {currentTime}
-            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+                  <span>KAMBOVE TV</span>
+                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">
+                    MASTER CONTROL
+                  </span>
+                </h1>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${getBadgeStyle()}`}>
+                  {getStatusLabel()}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                <span>Régie de diffusion automatique H24</span>
+                <span className="text-slate-600">&bull;</span>
+                <span className="font-mono text-slate-400">192.168.100.74</span>
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Right: Master Control Actions */}
-        <div className="flex items-center gap-2">
-          {status.onAir ? (
+          {/* Master Playout Actions Bar */}
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Lancer On-Air */}
             <button
-              id="btn-master-standby"
-              onClick={() => onControl('standby')}
-              disabled={isActionLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-              title="Mettre la régie en pause / veille"
-            >
-              <Square className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-              <span>Standby</span>
-            </button>
-          ) : (
-            <button
-              id="btn-master-onair"
+              id="btn-ctrl-start"
               onClick={() => onControl('start')}
-              disabled={isActionLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition border border-rose-500/50"
-              title="Démarrer la diffusion en direct (On-Air)"
+              disabled={isActionLoading || status.onAir}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${
+                status.onAir
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+              }`}
             >
-              <Play className="w-3.5 h-3.5 fill-white" />
+              <Play className="w-3.5 h-3.5 fill-current" />
               <span>Lancer On-Air</span>
             </button>
-          )}
 
-          <button
-            id="btn-master-skip"
-            onClick={() => onControl('skip')}
-            disabled={isActionLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition active:scale-95"
-            title="Sauter au média suivant (Liquidsoap skip)"
-          >
-            <SkipForward className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Suivant</span>
-          </button>
+            {/* Standby */}
+            <button
+              id="btn-ctrl-standby"
+              onClick={() => onControl('standby')}
+              disabled={isActionLoading || !status.onAir}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm ${
+                !status.onAir
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  : 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-900/30'
+              }`}
+            >
+              <Square className="w-3 h-3 fill-current" />
+              <span>Standby</span>
+            </button>
 
-          <button
-            id="btn-master-reload"
-            onClick={() => onControl('reload')}
-            disabled={isActionLoading}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 transition"
-            title="Recharger la playlist active (tv_playlist.reload)"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden md:inline">Recharger</span>
-          </button>
+            {/* Suivant / Skip */}
+            <button
+              id="btn-ctrl-skip"
+              onClick={() => onControl('skip')}
+              disabled={isActionLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+              title="Passer immédiatement au média suivant"
+            >
+              <FastForward className="w-3.5 h-3.5" />
+              <span>Média Suivant</span>
+            </button>
 
-          <button
-            id="btn-master-obs"
-            onClick={() => onControl('obs_mode')}
-            disabled={isActionLoading}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold border transition ${
-              status.mode === 'obs'
-                ? 'bg-amber-600 text-white border-amber-500'
-                : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-500/40'
-            }`}
-            title="Bascule vers le flux OBS Studio en direct (Culte direct)"
-          >
-            <Radio className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Direct OBS</span>
-          </button>
+            {/* Direct OBS */}
+            <button
+              id="btn-ctrl-obs"
+              onClick={() => onControl('obs_mode')}
+              disabled={isActionLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                status.mode === 'obs'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 ring-2 ring-purple-400'
+                  : 'bg-slate-800 hover:bg-purple-950/70 text-purple-300 border border-purple-800/60'
+              }`}
+              title="Basculer la diffusion sur le flux direct OBS (Culte)"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Direct OBS</span>
+            </button>
 
-          <button
-            id="btn-master-mire"
-            onClick={() => onControl('emergency_mire')}
-            disabled={isActionLoading}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 transition"
-            title="Activer la mire de secours immédiatement en cas de problème"
-          >
-            <AlertOctagon className="w-3.5 h-3.5 text-red-400" />
-            <span className="hidden lg:inline">Mire</span>
-          </button>
+            {/* Mire Urgence */}
+            <button
+              id="btn-ctrl-mire"
+              onClick={() => onControl('emergency_mire')}
+              disabled={isActionLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                status.mode === 'emergency_mire'
+                  ? 'bg-rose-600 text-white ring-2 ring-rose-400'
+                  : 'bg-slate-800 hover:bg-rose-950/60 text-rose-300 border border-rose-900/60'
+              }`}
+              title="Activer la mire de secours technique"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Mire</span>
+            </button>
+
+            {/* Recharger playlist */}
+            <button
+              id="btn-ctrl-reload"
+              onClick={() => onControl('reload')}
+              disabled={isActionLoading}
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+              title="Recharger Liquidsoap sans couper l'antenne"
+            >
+              <RotateCw className={`w-4 h-4 ${isActionLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs Bar & Quick Telemetry Ribbon */}
-      <div className="bg-slate-900 border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
-          {/* Tabs */}
-          <nav className="flex space-x-1 py-1" aria-label="Tabs">
+      {/* Navigation Sub-Bar & Key Stats */}
+      <div className="bg-slate-950/60 border-t border-slate-800/80 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 py-2">
+          
+          {/* Navigation Tabs */}
+          <nav className="flex items-center space-x-1">
             <button
               id="tab-regie"
               onClick={() => onTabChange('regie')}
@@ -212,7 +199,7 @@ export const Header: React.FC<HeaderProps> = ({
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
-              <Tv className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5" />
               <span>Régie & Grille de Diffusion</span>
             </button>
 
@@ -241,38 +228,29 @@ export const Header: React.FC<HeaderProps> = ({
               <Activity className="w-3.5 h-3.5" />
               <span>Diagnostics Ubuntu & Telnet</span>
             </button>
-
-            <button
-              id="tab-guide"
-              onClick={() => onTabChange('guide')}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-semibold transition ${
-                activeTab === 'guide'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-              }`}
-            >
-              <FileCode2 className="w-3.5 h-3.5" />
-              <span>Guide & Scripts Régie</span>
-            </button>
           </nav>
 
           {/* Quick Telemetry Vitals */}
-          <div className="hidden md:flex items-center gap-4 text-[11px] text-slate-400 py-1 font-mono">
-            <div className="flex items-center gap-1.5" title="Montage NAS /mnt/regie_videos">
-              <span className={`w-2 h-2 rounded-full ${status.nasStatus?.mounted ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-              <span>{status.nasStatus?.mounted ? `NAS: ${status.nasStatus?.freeSpaceGB || 0} Go libres` : 'NAS: Non monté (/mnt/regie_videos)'}</span>
+          <div className="hidden lg:flex items-center gap-4 text-xs font-mono text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="text-slate-300">Owncast RTMP</span>
+              <span className="text-slate-500">:1935</span>
             </div>
 
-            <div className="flex items-center gap-1.5" title="Port Telnet Liquidsoap 1234">
-              <span className={`w-2 h-2 rounded-full ${status.serverStatus?.telnetConnected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-              <span>Telnet 1234: {status.serverStatus?.telnetConnected ? 'Actif' : 'En attente'}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+              <span className="text-slate-300">Liquidsoap Telnet</span>
+              <span className="text-slate-500">:1234</span>
             </div>
 
-            <div className="flex items-center gap-1.5" title="Débit flux RTMP vers Owncast">
-              <Radio className="w-3 h-3 text-indigo-400" />
-              <span>RTMP: {status.rtmpStatus?.connected ? `${status.rtmpStatus?.bitrateKbps || 0} kbps` : 'Veille'}</span>
+            <div className="flex items-center gap-1.5">
+              <HardDrive className="w-3 h-3 text-slate-400" />
+              <span className="text-slate-300">NAS</span>
+              <span className="text-emerald-400 font-bold">Connecté</span>
             </div>
           </div>
+
         </div>
       </div>
     </header>
